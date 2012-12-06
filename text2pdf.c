@@ -27,7 +27,6 @@ Version 1.1
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <error.h>
 
 #ifndef SEEK_SET
 #define SEEK_SET 0
@@ -82,6 +81,10 @@ void writestr(char *str) {
   }
 }
 
+void die(char *msg) {
+    fprintf(stderr,"%s\n",msg);
+    exit(1);
+}
 
 void WriteHeader(char *title){
 
@@ -178,12 +181,12 @@ long StartPage(){
   long strmPos;
 
   if(++curObj >= LOCATIONS_SIZE)
-    error(1,0,"locations[] size overflow %d>=%d",curObj,LOCATIONS_SIZE);
+    die("locations overflow, increase LOCATIONS_SIZE");
 
   locations[curObj] = fpos;
 
   if(++pageNo >= PAGEARRAY_SIZE)
-    error(1,0,"pageObs[] size overflow %d>=%d",pageNo,PAGEARRAY_SIZE);
+    die("pages overflow, increase PAGEARRAY_SIZE");
 
   pageObs[pageNo] = curObj;
 
@@ -197,7 +200,7 @@ long StartPage(){
   writestr("endobj\n");
 
   if(curObj >= LOCATIONS_SIZE)
-    error(1,0,"Locations[] size overflow %d>=%d",curObj,LOCATIONS_SIZE);
+    die("locations overflow, increase LOCATIONS_SIZE");
 
   locations[curObj] = fpos;
 
@@ -225,7 +228,7 @@ void EndPage(long streamStart){
   writestr("endobj\n");
 
   if(++curObj >= LOCATIONS_SIZE)
-    error(1,0,"Locations[] size overflow %d>=%d",curObj,LOCATIONS_SIZE);
+    die("locations overflow, increase LOCATIONS_SIZE");
 
   locations[curObj] = fpos;
 
