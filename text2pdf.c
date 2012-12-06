@@ -27,6 +27,7 @@ Version 1.1
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <error.h>
 
 #ifndef SEEK_SET
 #define SEEK_SET 0
@@ -41,11 +42,14 @@ Version 1.1
 char *appname = "text2pdf v1.1";
 char *progname = "text2pdf";
 
+#define LOCATIONS_SIZE 5000
+#define PAGEARRAY_SIZE 2000
+
 FILE *infile;
 int pageNo = 0;
-int pageObs[500];
+int pageObs[PAGEARRAY_SIZE];
 int curObj = 5;  /* object number being or last written */
-long locations[1000];
+long locations[LOCATIONS_SIZE];
 
 char font[256];
 char *defaultFont = "Courier";
@@ -173,8 +177,16 @@ void WriteHeader(char *title){
 long StartPage(){
   long strmPos;
 
-  locations[++curObj] = fpos;
-  pageObs[++pageNo] = curObj;
+  if(++curObj >= LOCATIONS_SIZE)
+    error(1,0,"locations[] size overflow %d>=%d",curObj,LOCATIONS_SIZE);
+
+  locations[curObj] = fpos;
+
+  if(++pageNo >= PAGEARRAY_SIZE)
+    error(1,0,"pageObs[] size overflow %d>=%d",pageNo,PAGEARRAY_SIZE);
+
+  pageObs[pageNo] = curObj;
+
   sprintf(buf, "%d 0 obj\n", curObj); writestr(buf);
   writestr("<<\n");
   writestr("/Type /Page\n");
@@ -183,8 +195,12 @@ long StartPage(){
   sprintf(buf, "/Contents %d 0 R\n", ++curObj); writestr(buf);
   writestr(">>\n");
   writestr("endobj\n");
-  
+
+  if(curObj >= LOCATIONS_SIZE)
+    error(1,0,"Locations[] size overflow %d>=%d",curObj,LOCATIONS_SIZE);
+
   locations[curObj] = fpos;
+
   sprintf(buf, "%d 0 obj\n", curObj); writestr(buf);
   writestr("<<\n");
   sprintf(buf, "/Length %d 0 R\n", curObj + 1); writestr(buf);
@@ -208,7 +224,11 @@ void EndPage(long streamStart){
   writestr("endstream\n");
   writestr("endobj\n");
 
-  locations[++curObj] = fpos;
+  if(++curObj >= LOCATIONS_SIZE)
+    error(1,0,"Locations[] size overflow %d>=%d",curObj,LOCATIONS_SIZE);
+
+  locations[curObj] = fpos;
+
   sprintf(buf, "%d 0 obj\n", curObj); writestr(buf);
   sprintf(buf, "%lu\n", streamEnd - streamStart); writestr(buf);
   writestr("endobj\n");
